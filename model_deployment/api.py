@@ -3,7 +3,8 @@ from flask import Flask
 #from flask_restplus import Api, Resource, fields, reqparse
 from flask_restx import Api, Resource, fields, reqparse
 import joblib
-from model_deployment.m09_model_deployment import predicted_price
+#from model_deployment.m09_model_deployment import predicted_price
+from m09_model_deployment import predicted_price
 import pandas as pd
 
 app = Flask(__name__)
