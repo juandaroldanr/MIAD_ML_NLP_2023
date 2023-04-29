@@ -25,7 +25,8 @@ parser.add_argument(
     'vehicle_data', 
     type=str, 
     required=True, 
-    help='Vehicle data in JSON format with the following fields: Price, Year, Mileage, State, Make, Model', 
+ #   help='Vehicle data in JSON format with the following fields: Price, Year, Mileage, State, Make, Model', 
+    help='Vehicle data in JSON format with the following fields: Year, Mileage, State, Make, Model', 
     location='args')
 
 resource_fields = api.model('Resource', {
