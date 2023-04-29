@@ -1,45 +1,56 @@
 #!/usr/bin/python
 from flask import Flask
-from flask_restplus import Api, Resource, fields
+from flask_restplus import Api, Resource, fields, reqparse
 import joblib
-from m09_model_deployment import predict_proba
+from model_deployment.m09_model_deployment import predicted_price
+import pandas as pd
 
 app = Flask(__name__)
 
 api = Api(
     app, 
     version='1.0', 
-    title='Phishing Prediction API',
-    description='Phishing Prediction API')
+    title='Vehicle Price Prediction API',
+    description='Vehicle Price Prediction API')
 
-ns = api.namespace('predict', 
-     description='Phishing Classifier')
+ns = api.namespace('vehicle_predict', 
+     description='Vehicle Price Prediction')
    
-parser = api.parser()
+parser = reqparse.RequestParser()
 
 parser.add_argument(
-    'URL', 
+    'vehicle_data', 
     type=str, 
     required=True, 
-    help='URL to be analyzed', 
+    help='Vehicle data in JSON format with the following fields: Price, Year, Mileage, State, Make, Model', 
     location='args')
 
 resource_fields = api.model('Resource', {
-    'result': fields.String,
+    'result': fields.Float,
 })
 
 @ns.route('/')
-class PhishingApi(Resource):
+class VehiclePriceApi(Resource):
 
     @api.doc(parser=parser)
     @api.marshal_with(resource_fields)
     def get(self):
         args = parser.parse_args()
-        
+
+        # Convert JSON data to DataFrame
+        vehicle_data = pd.read_json(args['vehicle_data'], orient='records')
+
+        # Apply one-hot encoding to State, Make, and Model
+        one_hot_data = pd.get_dummies(vehicle_data, columns=['State', 'Make', 'Model'])
+
+        # Make prediction
+        price_prediction = predicted_price(one_hot_data)
+
         return {
-         "result": predict_proba(args['URL'])
+         "result": price_prediction
         }, 200
     
     
 if __name__ == '__main__':
-    app.run(debug=True, use_reloader=False, host='0.0.0.0', port=8888)
+    app.run(debug=True, use_reloader=False, host='0.0.0.0', port=5000)
+
