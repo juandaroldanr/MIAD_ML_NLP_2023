@@ -1,10 +1,7 @@
 #!/usr/bin/python
-from flask import Flask
-#from flask_restplus import Api, Resource, fields, reqparse
+from flask import Flask, request
 from flask_restx import Api, Resource, fields, reqparse
 import joblib
-#from model_deployment.m09_model_deployment import predicted_price
-#from m09_model_deployment import predicted_price 
 from m09_model_deployment import predict_price
 import pandas as pd
 
@@ -22,11 +19,38 @@ ns = api.namespace('vehicle_predict',
 parser = reqparse.RequestParser()
 
 parser.add_argument(
-    'vehicle_data', 
+    'year', 
+    type=int, 
+    required=True, 
+    help='Year of the vehicle', 
+    location='args')
+
+parser.add_argument(
+    'mileage', 
+    type=int, 
+    required=True, 
+    help='Mileage of the vehicle', 
+    location='args')
+
+parser.add_argument(
+    'state', 
     type=str, 
     required=True, 
- #   help='Vehicle data in JSON format with the following fields: Price, Year, Mileage, State, Make, Model', 
-    help='Vehicle data in JSON format with the following fields: Year, Mileage, State, Make, Model', 
+    help='State where the vehicle is located', 
+    location='args')
+
+parser.add_argument(
+    'make', 
+    type=str, 
+    required=True, 
+    help='Make of the vehicle', 
+    location='args')
+
+parser.add_argument(
+    'model', 
+    type=str, 
+    required=True, 
+    help='Model of the vehicle', 
     location='args')
 
 resource_fields = api.model('Resource', {
@@ -41,19 +65,27 @@ class VehiclePriceApi(Resource):
     def get(self):
         args = parser.parse_args()
 
-        # Convert JSON data to DataFrame
-        vehicle_data = pd.read_json(args['vehicle_data'], orient='records')
+        # Create a dictionary with the request arguments
+        vehicle_data = {
+            'Year': args['year'],
+            'Mileage': args['mileage'],
+            'State': args['state'],
+            'Make': args['make'],
+            'Model': args['model']
+        }
+
+        # Create a DataFrame from the dictionary
+        vehicle_data_df = pd.DataFrame(vehicle_data, index=[0])
 
         # Apply one-hot encoding to State, Make, and Model
-        one_hot_data = pd.get_dummies(vehicle_data, columns=['State', 'Make', 'Model'])
+        one_hot_data = pd.get_dummies(vehicle_data_df, columns=['State', 'Make', 'Model'])
 
         # Make prediction
-        price_prediction = predicted_price(one_hot_data)
+        price_prediction = predict_price(one_hot_data)
 
         return {
-         "result": price_prediction
+            "result": price_prediction
         }, 200
-    
     
 if __name__ == '__main__':
     app.run(debug=True, use_reloader=False, host='0.0.0.0', port=5000)
